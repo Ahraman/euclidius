@@ -7,3 +7,4 @@ edition = "2021"
 dotenvy = { version = "0.15.7" }
 
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "net"] }
+axum = { version = "0.7.5", features = ["macros", "http2", "multipart"] }
