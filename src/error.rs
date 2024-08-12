@@ -2,6 +2,8 @@
 pub enum Error {
     Io(std::io::Error),
     Dotenvy(dotenvy::Error),
+    Sqlx(sqlx::Error),
+    Migrate(sqlx::migrate::MigrateError),
 }
 
 impl std::fmt::Display for Error {
@@ -9,6 +11,8 @@ impl std::fmt::Display for Error {
         match self {
             Error::Io(e) => e.fmt(f),
             Error::Dotenvy(e) => e.fmt(f),
+            Error::Sqlx(e) => e.fmt(f),
+            Error::Migrate(e) => e.fmt(f),
         }
     }
 }
@@ -24,5 +28,17 @@ impl From<std::io::Error> for Error {
 impl From<dotenvy::Error> for Error {
     fn from(value: dotenvy::Error) -> Self {
         Self::Dotenvy(value)
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(value: sqlx::Error) -> Self {
+        Self::Sqlx(value)
+    }
+}
+
+impl From<sqlx::migrate::MigrateError> for Error {
+    fn from(value: sqlx::migrate::MigrateError) -> Self {
+        Self::Migrate(value)
     }
 }

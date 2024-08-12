@@ -5,6 +5,8 @@ use tokio::net::TcpListener;
 async fn main() -> Result<(), Error> {
     dotenvy::dotenv()?;
 
+    euclidius::validate_database().await?;
+
     let listener = TcpListener::bind("localhost:3000").await?;
     axum::serve(listener, build_router()).await?;
 
