@@ -4,7 +4,11 @@ use axum::response::{IntoResponse, Response};
 pub enum Error {
     Io(std::io::Error),
     EnvVar(std::env::VarError),
+
     Dotenvy(dotenvy::Error),
+
+    Http(axum::http::Error),
+
     Sqlx(sqlx::Error),
     Migrate(sqlx::migrate::MigrateError),
 }
@@ -14,7 +18,11 @@ impl std::fmt::Display for Error {
         match self {
             Error::Io(e) => e.fmt(f),
             Error::EnvVar(e) => e.fmt(f),
+
             Error::Dotenvy(e) => e.fmt(f),
+
+            Error::Http(e) => e.fmt(f),
+
             Error::Sqlx(e) => e.fmt(f),
             Error::Migrate(e) => e.fmt(f),
         }
@@ -38,6 +46,12 @@ impl From<std::env::VarError> for Error {
 impl From<dotenvy::Error> for Error {
     fn from(value: dotenvy::Error) -> Self {
         Self::Dotenvy(value)
+    }
+}
+
+impl From<axum::http::Error> for Error {
+    fn from(value: axum::http::Error) -> Self {
+        Self::Http(value)
     }
 }
 
