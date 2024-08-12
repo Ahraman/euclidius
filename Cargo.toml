@@ -8,6 +8,7 @@ serde = { version = "1.0.206", features = ["derive"] }
 serde_json = { version = "1.0.124" }
 
 dotenvy = { version = "0.15.7" }
+handlebars = { version = "6.0.0" }
 
 tokio = { version = "1.39.2", features = ["macros", "rt-multi-thread", "net"] }
 axum = { version = "0.7.5", features = ["macros", "http2", "multipart"] }
