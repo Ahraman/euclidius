@@ -1,15 +1,16 @@
-use sqlx::{migrate::MigrateDatabase, postgres::PgPoolOptions, PgPool};
+use sqlx::{migrate::MigrateDatabase, postgres::PgPoolOptions, PgPool, Postgres};
+
+pub mod app;
+pub mod error;
+pub mod request;
 
 use crate::error::Error;
 
-pub mod error;
-pub mod route;
+pub async fn validate_database_and_connect() -> Result<PgPool, Error> {
+    let url = std::env::var("DATABASE_URL")?;
 
-pub async fn validate_database() -> Result<(), Error> {
-    let url = std::env::var("DATABASE_URL").expect("DATABASE_URL not set");
-
-    if !sqlx::Postgres::database_exists(&url).await? {
-        sqlx::Postgres::create_database(&url).await?;
+    if !Postgres::database_exists(&url).await? {
+        Postgres::create_database(&url).await?;
     }
 
     let conn = connect_database(&url).await?;
@@ -17,7 +18,7 @@ pub async fn validate_database() -> Result<(), Error> {
     let migrator = sqlx::migrate!();
     migrator.run(&conn).await?;
 
-    Ok(())
+    Ok(conn)
 }
 
 pub async fn connect_database(url: &str) -> Result<PgPool, Error> {
