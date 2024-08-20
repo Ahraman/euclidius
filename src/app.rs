@@ -1,23 +1,58 @@
-use axum::{routing::get, Router};
+use std::sync::Arc;
+
+use axum::{routing, Router};
+use handlebars::Handlebars;
 use sqlx::PgPool;
 
-pub mod route;
-use self::route::{page, root};
+mod route;
+use route::{page, root};
+
+use crate::result::Result;
 
 #[derive(Clone)]
 pub struct App {
-    pub db_conn_pool: PgPool,
+    inner: Arc<InnerApp>,
+}
+
+struct InnerApp {
+    db_conn: PgPool,
+    handlebars: Handlebars<'static>,
 }
 
 impl App {
-    pub fn new(conn: PgPool) -> Self {
-        Self { db_conn_pool: conn }
+    pub fn new(db_conn: PgPool) -> Result<Self> {
+        Ok(Self {
+            inner: Arc::new(InnerApp {
+                db_conn,
+                handlebars: Self::create_handlebars()?,
+            }),
+        })
     }
 
-    pub fn build_router(self) -> Router {
+    pub fn db_conn(&self) -> &PgPool {
+        &self.inner.db_conn
+    }
+
+    pub fn handlebars(&self) -> &Handlebars<'static> {
+        &self.inner.handlebars
+    }
+
+    pub fn into_router(self) -> Router {
         Router::new()
-            .route("/", get(root::get))
-            .route("/:page", get(page::get).post(page::post))
+            .route("/:title", routing::get(page::get).post(page::set))
+            .route("/", routing::get(root::get))
             .with_state(self)
+    }
+}
+
+impl App {
+    fn create_handlebars() -> Result<Handlebars<'static>> {
+        let mut handlebars = Handlebars::new();
+        handlebars
+            .register_template_file("create-page", "./assets/templates/create-page.handlebars")?;
+        handlebars
+            .register_template_file("not-found", "./assets/templates/not-found.handlebars")?;
+
+        Ok(handlebars)
     }
 }

@@ -1,2 +1,2 @@
-pub(crate) mod page;
-pub(crate) mod root;
+pub mod page;
+pub mod root;

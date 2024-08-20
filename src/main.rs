@@ -1,14 +1,20 @@
-use euclidius::{app::App, error::Error};
 use tokio::net::TcpListener;
 
+use euclidius::{app::App, db, result::Result};
+
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     dotenvy::dotenv()?;
 
-    let app = App::new(euclidius::validate_database_and_connect().await?);
+    let database_url = std::env::var("DATABASE_URL")?;
+    let database_conn = db::connect_or_setup(&database_url).await?;
+    let app = App::new(database_conn)?;
 
-    let listener = TcpListener::bind("localhost:3000").await?;
-    axum::serve(listener, app.build_router()).await?;
+    let server_url = std::env::var("SERVER_URL")?;
+    let listener = TcpListener::bind(&server_url).await?;
+    println!("Listening on: {server_url}");
 
+    let router = app.into_router();
+    axum::serve(listener, router).await?;
     Ok(())
 }
