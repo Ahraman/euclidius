@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0.206", features = ["derive"] }
 serde_json = { version = "1.0.124" }
+time = { version = "0.3.36" }
 
 dotenvy = { version = "0.15.7" }
 handlebars = { version = "6.0.0" }
