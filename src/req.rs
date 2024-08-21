@@ -5,6 +5,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde_json::json;
+use tokio::fs;
 
 use crate::{app::App, error::Error, result::Result};
 
@@ -147,9 +148,14 @@ impl PageReq {
     async fn exec_edit(self, app: App, _: Option<PageContent>) -> Result<Response> {
         Response::builder()
             .header("Content-Type", "text/html")
-            .body(Body::from(
-                app.handlebars().render("create-page", &json!({}))?,
-            ))
+            .body(Body::from(app.handlebars().render(
+                "create-page",
+                &json!({
+                    "page": {
+                        "title": &self.title,
+                    }
+                }),
+            )?))
             .map_err(|e| e.into())
     }
 
@@ -164,9 +170,41 @@ impl PageReq {
     async fn page_not_found(self, app: App) -> Result<Response> {
         Response::builder()
             .header("Content-Type", "text/html")
-            .body(Body::from(
-                app.handlebars().render("not-found", &json!({}))?,
-            ))
+            .body(Body::from(app.handlebars().render(
+                "index",
+                &json!({
+                    "page": {
+                        "title": &self.title,
+                    }
+                }),
+            )?))
+            .map_err(|e| e.into())
+    }
+}
+
+pub struct LoadReq {
+    file: String,
+}
+
+impl LoadReq {
+    async fn exec(self, _: App) -> Result<Response> {
+        let file = if self.file.starts_with('/') {
+            // omit the initial backslash if it is there
+            let mut chars = self.file.chars();
+            _ = chars.next();
+            chars.as_str()
+        } else {
+            &self.file
+        };
+
+        let path = "assets/".to_string() + file;
+        let content = fs::read_to_string(&path).await?;
+
+        // For some reason using .into_response() breaks files from
+        // being registered as what they are, e.g. CSS.
+        // Weird ahh bug ngl but this works anyway.
+        Response::builder()
+            .body(Body::from(content))
             .map_err(|e| e.into())
     }
 }
@@ -174,6 +212,7 @@ impl PageReq {
 pub enum Req {
     None,
     Page(PageReq),
+    Load(LoadReq),
 }
 
 impl Req {
@@ -197,6 +236,10 @@ impl Req {
             kind: PageReqKind::Submit(post),
         })
     }
+
+    pub fn load(file: impl Into<String>) -> Self {
+        Self::Load(LoadReq { file: file.into() })
+    }
 }
 
 pub trait ReqExec {
@@ -208,6 +251,7 @@ impl ReqExec for Req {
         match self {
             Req::None => Err(Error::NoReq),
             Req::Page(req) => req.exec(app).await,
+            Req::Load(req) => req.exec(app).await,
         }
     }
 }
